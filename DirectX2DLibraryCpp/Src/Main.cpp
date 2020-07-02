@@ -5,14 +5,22 @@
 #include "Engine/Engine.h"
 #include "Common/Vec.h"
 
-Vec2 g_Position = Vec2(0.0f, 0.0f);
-Vec2 g_Scale = Vec2(1.0f, 1.0f);
-float g_Angle = 0.0f;
+int g_frameCount = 0;
+int g_mashCount = 0;
 
 // ゲーム処理
 void GameProcessing();
 // 描画処理
 void DrawProcessing();
+
+// カウントダウン
+void CountDown();
+// 開始メッセージを描画
+void DrawStartMessage();
+// 終了メッセージを描画
+void DrawEndMessage();
+// 連打回数を描画
+void DrawMashCount();
 
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
@@ -46,6 +54,9 @@ int WINAPI WinMain(
 		}
 		else
 		{
+			// 現在何フレーム目かをインクリメント
+			g_frameCount++;
+
 			// ゲーム処理
 			GameProcessing();
 
@@ -64,6 +75,7 @@ int WINAPI WinMain(
 
 	return 0;
 }
+
 void GameProcessing()
 {
 	// 入力データの更新
@@ -73,21 +85,15 @@ void GameProcessing()
 	//========================================================
 	// キーボードの入力取得
 	//========================================================
+	if (g_frameCount < 300 || 630 <= g_frameCount) {
+		return;
+	}
 
-	//if (Engine::IsKeyboardKeyPushed(DIK_SPACE) == true)
-	//{
-	//	// キーが押された瞬間の処理
-	//}
-
-	//if (Engine::IsKeyboardKeyHeld(DIK_LEFT) == true)
-	//{
-	//	// キーが押されている間の処理
-	//}
-
-	//if (Engine::IsKeyboardKeyReleased(DIK_A))
-	//{
-	//	// キーが離された瞬間の処理
-	//}
+	if (Engine::IsKeyboardKeyPushed(DIK_X) == true)
+	{
+		// キーが押された瞬間の処理
+		g_mashCount++;
+	}
 }
 
 void DrawProcessing()
@@ -97,11 +103,43 @@ void DrawProcessing()
 	Engine::StartDrawing(0);
 
 	// フォント描画
-	Engine::DrawFont(0.0f, 0.0f, "FontSize:Small", FontSize::Small, FontColor::White);
-	Engine::DrawFont(0.0f, 30.0f, "FontSize:Regular", FontSize::Regular, FontColor::White);
-	Engine::DrawFont(0.0f, 60.0f, "FontSize:Large", FontSize::Large, FontColor::White);
+	if (g_frameCount < 180) {
+		CountDown();
+	} else if (g_frameCount < 300) {
+		DrawStartMessage();
+	} else if(630 <= g_frameCount) {
+		DrawEndMessage();
+	}
+
+	DrawMashCount();
 
 	// 描画終了
 	// 描画処理を終了する場合、必ず最後に実行する
 	Engine::FinishDrawing();
 }
+
+void CountDown()
+{
+	int second = g_frameCount / 60;
+	int count = 3 - second;
+	const int bufferSize = 1 + 1;
+	char countDownString[bufferSize] = {};
+	sprintf_s(countDownString, bufferSize, "%d", count);
+	Engine::DrawFont(300.0f, 100.0f, countDownString, FontSize::Large, FontColor::White);
+}
+
+void DrawStartMessage() {
+	Engine::DrawFont(200.0f, 100.0f, "連打スタート！！", FontSize::Large, FontColor::White);
+}
+
+void DrawEndMessage() {
+	Engine::DrawFont(200.0f, 100.0f, "しゅーりょー", FontSize::Large, FontColor::White);
+}
+
+void DrawMashCount() {
+	const int bufferSize = 32;
+	char mashCountString[bufferSize] = {};
+	sprintf_s(mashCountString, bufferSize, "連打回数： %d回", g_mashCount);
+	Engine::DrawFont(250.0f, 180.0f, mashCountString, FontSize::Large, FontColor::White);
+}
+
