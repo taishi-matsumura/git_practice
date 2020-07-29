@@ -6,19 +6,49 @@
 #include "Engine/Engine.h"
 #include "Common/Vec.h"
 
-Vec2 g_Position = Vec2(0.0f, 0.0f);
-Vec2 g_Scale = Vec2(1.0f, 1.0f);
-float g_Angle = 0.0f;
+// =====================================================================
+// 自作型
+// =====================================================================
+enum Phase {
+	PHASE_START,
+	PHASE_INPUT,
+	PHASE_RESULT
+};
 
-int g_playerHand = -1;
-int g_enemyHand;
 
+// =====================================================================
+// グローバル変数
+// =====================================================================
+static Phase g_Phase = PHASE_START;
+static Vec2 g_Position = Vec2(0.0f, 0.0f);
+static Vec2 g_Scale = Vec2(1.0f, 1.0f);
+static float g_Angle = 0.0f;
+static int g_playerHand = -1;
+static int g_enemyHand;
+static int g_FrameCount = 0;
+
+
+// =====================================================================
+// プロトタイプ宣言
+// =====================================================================
 // ゲーム処理
 void GameProcessing();
+
 // 描画処理
 void DrawProcessing();
 
+// テクスチャ名取得
 const char* GetTextureName(int hand);
+
+// タイトル描画
+void DrawTitle();
+
+// 入力受付画面描画
+void DrawInput();
+
+// 結果画面描画
+void DrawResult();
+
 
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
@@ -59,6 +89,8 @@ int WINAPI WinMain(
 		}
 		else
 		{
+			g_FrameCount++;
+
 			// ゲーム処理
 			GameProcessing();
 
@@ -77,6 +109,7 @@ int WINAPI WinMain(
 
 	return 0;
 }
+
 void GameProcessing() {
 	// 入力データの更新
 	Engine::Update();
@@ -85,6 +118,10 @@ void GameProcessing() {
 	//========================================================
 	// キーボードの入力取得
 	//========================================================
+	if (g_Phase != PHASE_INPUT) {
+		// 入力受付フェイズでなければ、キー入力無視
+		return;
+	}
 
 	if (Engine::IsKeyboardKeyPushed(DIK_0) == true) {
 		g_playerHand = 0;
@@ -101,48 +138,18 @@ void DrawProcessing()
 	// 描画処理を実行する場合、必ず最初実行する
 	Engine::StartDrawing(0);
 
-	// テクスチャ描画
-	if (g_playerHand != -1) {
-		//switch (g_playerHand) {
-		//case 0:
-		//	Engine::DrawTexture(200 - 208, 240 - 208, "rock", 255, 0.0F, 0.3F, 0.3F);
-		//	break;
+	switch (g_Phase) {
+	case PHASE_START:
+		DrawTitle();
+		break;
 
-		//case 1:
-		//	Engine::DrawTexture(200 - 211, 240 - 230, "scisors", 255, 0.0F, 0.3F, 0.3F);
-		//	break;
+	case PHASE_INPUT:
+		DrawInput();
+		break;
 
-		//case 2:
-		//	Engine::DrawTexture(200 - 237, 240 - 218, "paper", 255, 0.0F, 0.3F, 0.3F);
-		//	break;
-		//}
-
-		const char* textureName = GetTextureName(g_playerHand);
-		Texture* textureInfo = Engine::GetTexture(textureName);
-		int playerX = 200 - textureInfo->Width / 2;
-		int playerY = 240 - textureInfo->Height / 2;
-		Engine::DrawTexture(playerX, playerY, textureName, 255, 0.0F, 0.3F, 0.3F);
-
-
-		//switch (g_enemyHand) {
-		//case 0:
-		//	Engine::DrawTexture(440 - 208, 240 - 208, "rock", 255, 0.0F, 0.3F, 0.3F);
-		//	break;
-
-		//case 1:
-		//	Engine::DrawTexture(440 - 211, 240 - 230, "scisors", 255, 0.0F, 0.3F, 0.3F);
-		//	break;
-
-		//case 2:
-		//	Engine::DrawTexture(440 - 237, 240 - 218, "paper", 255, 0.0F, 0.3F, 0.3F);
-		//	break;
-		//}
-
-		textureName = GetTextureName(g_enemyHand);
-		textureInfo = Engine::GetTexture(textureName);
-		int enemyX = 440 - textureInfo->Width / 2;
-		int enemyY = 240 - textureInfo->Height / 2;
-		Engine::DrawTexture(enemyX, enemyY, textureName, 255, 0.0F, 0.3F, 0.3F);
+	case PHASE_RESULT:
+		DrawResult();
+		break;
 	}
 
 	// 描画終了
@@ -161,4 +168,32 @@ const char* GetTextureName(int hand) {
 	default:
 		return NULL;
 	}
+}
+
+void DrawTitle() {
+	Engine::DrawFont(0, 0, "ここでゲームの説明を表示する", FontSize::Large, FontColor::Red);
+	if (g_FrameCount == 60 * 2) {
+		g_Phase = PHASE_INPUT;
+	}
+}
+
+void DrawInput() {
+	if (g_playerHand != -1) {
+		// プレイヤーの手を描画
+		const char* textureName = GetTextureName(g_playerHand);
+		Texture* textureInfo = Engine::GetTexture(textureName);
+		float playerX = 200 - textureInfo->Width / 2;
+		float playerY = 240 - textureInfo->Height / 2;
+		Engine::DrawTexture(playerX, playerY, textureName, 255, 0.0F, 0.3F, 0.3F);
+
+		// CPUの手を描画
+		textureName = GetTextureName(g_enemyHand);
+		textureInfo = Engine::GetTexture(textureName);
+		int enemyX = 440 - textureInfo->Width / 2;
+		int enemyY = 240 - textureInfo->Height / 2;
+		Engine::DrawTexture(enemyX, enemyY, textureName, 255, 0.0F, 0.3F, 0.3F);
+	}
+}
+
+void DrawResult() {
 }
